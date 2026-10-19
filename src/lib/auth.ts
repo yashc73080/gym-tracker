@@ -11,6 +11,7 @@ import { createClient } from "@/lib/supabase/server";
 export const requireUserId = cache(async (): Promise<string> => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
-  if (error || !data.user) redirect("/login");
+  // No valid user: clear any stale session cookies (route handler) before showing the login page.
+  if (error || !data.user) redirect("/auth/reset");
   return data.user.id;
 });

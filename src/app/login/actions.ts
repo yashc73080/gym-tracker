@@ -23,8 +23,14 @@ export async function authenticate(_prev: string | null, formData: FormData): Pr
 }
 
 export async function signInWithGoogle() {
-  const origin = (await headers()).get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  // Build the return address from the host this request actually came in on (works on Vercel and locally).
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  const origin = `${proto}://${host}`;
   const supabase = await createClient();
+  // Start from a clean slate so a leftover session can't interfere with the OAuth exchange.
+  await supabase.auth.signOut().catch(() => {});
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo: `${origin}/auth/callback` },
