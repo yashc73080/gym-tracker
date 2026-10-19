@@ -17,6 +17,9 @@ export async function importAction(_prev: ImportState, formData: FormData): Prom
     const texts = await Promise.all(files.map(async (f) => ({ name: f.name, text: await f.text() })));
     return { summary: await runImport(userId, texts, commit) };
   } catch (e) {
-    return { error: e instanceof Error ? e.message : "Import failed." };
+    // Drizzle wraps the database error; the useful part (code, detail) is on `cause`.
+    const cause = e instanceof Error && e.cause instanceof Error ? e.cause.message : null;
+    const msg = e instanceof Error ? e.message.split(" params:")[0] : "Import failed.";
+    return { error: cause ? `${cause} (${msg.slice(0, 80)}…)` : msg };
   }
 }
